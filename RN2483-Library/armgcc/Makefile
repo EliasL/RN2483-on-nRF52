@@ -1,13 +1,17 @@
 PROG_NAME=nRF52_to_RN2483
 
-CFLAGS += -I../nRF52
-CFLAGS += -I../SEGGER_lib
+CFLAGS += -I../inc
+CFLAGS += -I../RTT
 
-SOURCES += ../nRF52/nRF52_uart.c
-SOURCES += ../nRF52/nRF52_pin.c
+SOURCES += ../src/nRF52_uart.c
+SOURCES += ../src/rn2483.c
+SOURCES += ../src/utilities_lib.c
+SOURCES += ../RTT/SEGGER_RTT_printf.c
+SOURCES += ../RTT/SEGGER_RTT.c
+SOURCES += ../RTT/Simple_debug_printf.c
 
 # We have to use SDK, not MDK because core_cm4.h is not provided in MDK
-xDK_TOP = ../../nRF5_SDK_15.0.0_a53641a
+xDK_TOP = ../../../nRF5_SDK_15.0.0_a53641a
 DEVICE = NRF52
 DEVICE_VARIANT =xxaa
 
@@ -71,8 +75,8 @@ all:
 
 flash:
 	@echo Flashing: $(PROG_NAME).hex
-	nrfjprog -f NRF52 --program $(PROG_NAME).hex --chiperase --verify
-	nrfjprog -f NRF52 --reset
+	nrfjprog -f NRF52 --program $(PROG_NAME).hex --chiperase --verify --snr 682165868
+	nrfjprog -f NRF52 --reset --snr 682165868
 
 debug:
 	make -C . DEBUG=yes
