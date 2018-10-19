@@ -3,11 +3,9 @@ An embedded C library for the Micrchip RN2483 LoRa module using the NordicSemico
 
 ## Contents
 1. Overview
-2. Documentation
-4. Usage
-5. Supported Platforms
-6. Adding Platforms
-7. Authors
+2. Usage
+3. Comments on development
+4. Authors
 
 ## Overview
 This is an embedded C library for interacting with the [Microchip RN2483](https://www.microchip.com/wwwproducts/en/RN2483) LoRa module.
@@ -25,7 +23,11 @@ Make sure to remove .example from the congifg.example.h file, and add your LoRaW
 
 Edit the the Makefile in armgcc. You need to change the relative path of xDK_TOP so that it matches where you have your SDK.
 
-## Comments on creating the library
+Edit nRF52_board_config.h to fit the connections on your hardware.
+
+Run the Makefile in armgcc.
+
+## Comments on development
 
 First of all, the usefulness of the NordicSnippets by Anders Nore cannot be exaggerated.
 
@@ -41,3 +43,4 @@ What we ended up doing, was using memcpy from string.h, and creating a new strin
 ## Authors
 - Elias Lundheim (elias@tradlosetrondheim.no)
 - Alexander Collins (alexander-collins@outlook.com)
+- Anders Nore (https://github.com/andenore)
