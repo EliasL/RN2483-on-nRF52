@@ -1,5 +1,5 @@
 # RN2483 Library for nRF52
-An embedded C library for the Micrchip RN2483 LoRa module using the NordicSemiconductor nRF52 platform.
+An embedded C library for the Micrchip RN2483 LoRa module using a NordicSemiconductor nRF52 platform.
 
 ## Contents
 1. Overview
