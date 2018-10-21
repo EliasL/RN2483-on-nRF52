@@ -37,7 +37,7 @@ Lastly, when sending a command from the nRF52, some pseudo code could look like 
 ```C
 sendCommand("Command");
 ```
-For some reason, the memory location of the string "Command" is in FLASH, instead of RAM. The performance or speed is not the issue here, but it just so happens that the nRF52 UART does not have access to the FLASH memory. To bypass this, you could store the string in a variable first, and then pass the variable in the command function:
+For some reason, the memory location of the string "Command" is in FLASH, instead of RAM. The performance is not the issue here, but it just so happens that the nRF52 UART does not have access to the FLASH memory. To bypass this, you could store the string in a variable first, and then pass the variable in the command function:
 ```C
 char string[] = "Command";
 sendCommand(string);
