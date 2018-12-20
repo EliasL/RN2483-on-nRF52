@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <nrf.h>
+#include <nrf_delay.h>
 
 /*
 * Function: length_of_string
@@ -39,9 +40,11 @@ bool string_contains(uint8_t * whole, uint8_t * piece);
 /*
 * Function: wait_a_bit
 * ----------------------------
-*  Runs a long loop
+*  Runs a long loop, previously very simply, but now with nrf_delay.h
+*
+*  seconds: Number of seconds to wait
 */
-void wait_a_bit(float bits);
+void wait_a_bit(float seconds);
 
 /*
 * Function: led_init
@@ -97,3 +100,11 @@ void button_init(const unsigned long button_gpio_pin);
 *  button_gpio_pin: The pin connected to the button
 */
 bool button_is_pressed(const unsigned long button_gpio_pin);
+
+/*
+* Function: init_button_check_timer
+* ----------------------------
+*  Initializes so that TIMER0_IRQHandler will be called every 10 ms
+*
+*/
+void init_button_check_timer();

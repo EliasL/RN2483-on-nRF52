@@ -110,6 +110,27 @@ bool send(const char* message){
     }
 }
 
+// This IRQ handler will trigger every 10ms
+// The timer is used to check if the button has been pressed
+void TIMER0_IRQHandler(void)
+{
+  volatile uint32_t dummy;
+  if (NRF_TIMER0->EVENTS_COMPARE[0] == 1)
+  {
+    NRF_TIMER0->EVENTS_COMPARE[0] = 0;
+
+    if(button_is_pressed(BUTTON_GPIO)){
+        led_on(LED_GPIO);
+        send("God jul!");
+        ready();
+    }
+
+    // Read back event register so ensure we have cleared it before exiting IRQ handler.
+    dummy = NRF_TIMER0->EVENTS_COMPARE[0];
+    dummy; // to get rid of set but not used warning
+  }
+}
+
 int main(void)
 {
 //Init
@@ -119,7 +140,7 @@ int main(void)
     nRF52_uart_init();
 
     //init led and button
-    //led_init(LED_GPIO);
+    led_init(LED_GPIO);
     button_init(BUTTON_GPIO);
 
     //Autobaud
@@ -148,16 +169,14 @@ int main(void)
         // The message was not sent
         return shut_down();
     }
-    
     ready();
-    //Wait
+
+    init_button_check_timer();
+
+    //Wait for button press
     while (1)
     {
-        if(button_is_pressed(BUTTON_GPIO)){
-            led_on(LED_GPIO);
-            send("God jul!");
-            ready();
-        }
+        __WFE();
     }
     nRF52_uart_quit();
     return 0;

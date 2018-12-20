@@ -41,10 +41,8 @@ bool string_contains(uint8_t *whole, uint8_t *piece){
   return false;
 }
 
-void wait_a_bit(float bits){
-  uint32_t volatile tmo;
-  tmo = 10000000 * bits;
-  while (tmo--);
+void wait_a_bit(float seconds){
+  nrf_delay_ms(1000*seconds);
 }
 
 void led_init(const unsigned long led_gpio_pin){
@@ -89,4 +87,25 @@ void button_init(const unsigned long button_gpio_pin){
 bool button_is_pressed( const unsigned long button_gpio_pin){
 	// Get the value set in the "pin2-th bit and shift it to get 1 or 0
   return !((NRF_GPIO->IN >> button_gpio_pin) & 1UL);
+}
+
+void init_button_check_timer(){
+   // 32-bit timer
+  NRF_TIMER0->BITMODE = TIMER_BITMODE_BITMODE_32Bit << TIMER_BITMODE_BITMODE_Pos;
+
+  // 1us timer period
+  NRF_TIMER0->PRESCALER = 4 << TIMER_PRESCALER_PRESCALER_Pos;
+
+  // 10000 us compare value, generates EVENTS_COMPARE[0]
+  NRF_TIMER0->CC[0] = 10000;
+
+  // Enable IRQ on EVENTS_COMPARE[0]
+  NRF_TIMER0->INTENSET = TIMER_INTENSET_COMPARE0_Enabled << TIMER_INTENSET_COMPARE0_Pos;
+
+  // Clear the timer when COMPARE0 event is triggered
+  NRF_TIMER0->SHORTS = TIMER_SHORTS_COMPARE0_CLEAR_Enabled << TIMER_SHORTS_COMPARE0_CLEAR_Pos;
+
+
+  NVIC_EnableIRQ(TIMER0_IRQn);
+  NRF_TIMER0->TASKS_START = 1;
 }
