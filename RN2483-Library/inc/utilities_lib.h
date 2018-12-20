@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <nrf.h>
 
 /*
 * Function: length_of_string
@@ -41,3 +42,58 @@ bool string_contains(uint8_t * whole, uint8_t * piece);
 *  Runs a long loop
 */
 void wait_a_bit(float bits);
+
+/*
+* Function: led_init
+* ----------------------------
+*  Initialize pin for driving a led diode
+*
+*  led_gpio_pin: The pin connected to the led
+*/
+void led_init(const unsigned long led_gpio_pin);
+
+/*
+* Function: led_on
+* ----------------------------
+*  Turn a led on
+*
+*  led_gpio_pin: The pin connected to the led
+*/
+void led_on(const unsigned long led_gpio_pin);
+
+/*
+* Function: led_off
+* ----------------------------
+*  Turn a led off
+*
+*  led_gpio_pin: The pin connected to the led
+*/
+void led_off(const unsigned long led_gpio_pin);
+
+/*
+* Function: led_toggle
+* ----------------------------
+*  Toggle a led
+*
+*  led_gpio_pin: The pin connected to the led
+*/
+void led_toggle(const unsigned long led_gpio_pin);
+
+
+/*
+* Function: button_init
+* ----------------------------
+*  Initialize pin for handeling a button
+*
+*  button_gpio_pin: The pin connected to the button
+*/
+void button_init(const unsigned long button_gpio_pin);
+
+/*
+* Function: button_is_pressed
+* ----------------------------
+*  Returns true if button is pressed
+*
+*  button_gpio_pin: The pin connected to the button
+*/
+bool button_is_pressed(const unsigned long button_gpio_pin);

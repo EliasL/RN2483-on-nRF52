@@ -6,7 +6,8 @@ you need to change these values accordingly.
 (Or you could leave them as they are, and change your connections instead)
 
 */
-
+#define BUTTON_GPIO  (16UL)
+#define LED_GPIO  (17UL)
 #define nRF52_PIN_TXD (22) 
 #define nRF52_PIN_RXD (23)
 #define nRF52_RESET_PIN (27) // Usually not soldered on the Shield

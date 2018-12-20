@@ -75,8 +75,8 @@ all:
 
 flash:
 	@echo Flashing: $(PROG_NAME).hex
-	nrfjprog -f NRF52 --program $(PROG_NAME).hex --chiperase --verify --snr 682165868
-	nrfjprog -f NRF52 --reset --snr 682165868
+	nrfjprog -f NRF52 --program $(PROG_NAME).hex --chiperase --verify
+	nrfjprog -f NRF52 --reset
 
 debug:
 	make -C . DEBUG=yes
