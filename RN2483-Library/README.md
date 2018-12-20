@@ -1,5 +1,5 @@
 # RN2483 Library for nRF52
-An embedded C library for the Micrchip RN2483 LoRa module using the NordicSemiconductor nRF52 platform.
+An embedded C library for the Micrchip RN2483 LoRa module using a NordicSemiconductor nRF52 platform.
 
 ## Contents
 1. Overview
@@ -31,14 +31,18 @@ Run the Makefile in armgcc.
 
 First of all, the usefulness of the NordicSnippets by Anders Nore cannot be exaggerated.
 
-Second, the RN2483 is often used with an arduino, and then also sometimes with a [XBee Shield](http://wiki.seeedstudio.com/XBee_Shield_V2.0/). The shield includes signal gate which only opens for certain voltages. The UART of an arduino is around 5V, whereas the nRF52 uses a 3.3V UART. The gate in the shield stops some the nRF52's signals in a manner I admittedly do not quite understand, but in one way or another, the signal is disturbed. We had to create our own shield in order to bypass the gate. 
+Second, the RN2483 is often used with an arduino, and then also sometimes with a [XBee Shield](http://wiki.seeedstudio.com/XBee_Shield_V2.0/). The shield includes signal gate which only opens for certain voltages. The UART of an arduino is around 5V, whereas the nRF52 uses a 3.3V UART. The gate in the shield stops some the nRF52's signals in a manner I admittedly do not quite understand, but in one way or another, the signal is disturbed. We decided to create our own shield in order to bypass the gate. 
 
 Lastly, when sending a command from the nRF52, some pseudo code could look like this:
-    sendCommand("Command");
-For some reason, the memory location of the string "Command" is in FLASH, instead of RAM. The performance or speed is not the issue here, but it just so happens that the nRF52 UART does not have access to the FLASH memory. To bypass this, you could store the string in a variable first, and then pass the variable in the command function:
-    char string[] = "Command";
-    sendCommand(string);
-What we ended up doing, was using memcpy from string.h, and creating a new string that luckily is placed in ram.
+```C
+sendCommand("Command");
+```
+For some reason, the memory location of the string "Command" is in FLASH, instead of RAM. The performance is not the issue here, but it just so happens that the nRF52 UART does not have access to the FLASH memory. To bypass this, you could store the string in a variable first, and then pass the variable in the command function:
+```C
+char string[] = "Command";
+sendCommand(string);
+```
+However, instead of doing that, we ended up using memcpy from string.h to create a new string that luckily was placed in ram.
 
 ## Authors
 - Elias Lundheim (elias@tradlosetrondheim.no)
