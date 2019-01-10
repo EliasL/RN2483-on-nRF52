@@ -89,8 +89,9 @@ void led_toggle(const unsigned long led_gpio_pin);
 *  Initialize pin for handeling a button
 *
 *  button_gpio_pin: The pin connected to the button
+*  SENSE_Enabled: Enable or disable sense on button pin
 */
-void button_init(const unsigned long button_gpio_pin);
+void button_init(const unsigned long button_gpio_pin, bool SENSE_Enabled);
 
 /*
 * Function: button_is_pressed

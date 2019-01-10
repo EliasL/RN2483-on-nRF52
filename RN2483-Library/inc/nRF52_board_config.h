@@ -1,5 +1,6 @@
-/*
 
+
+/*
 Your nRF52 board should be connected to the RN2483 in some way. 
 Depending on how you have connected the two devices,
 you need to change these values accordingly.

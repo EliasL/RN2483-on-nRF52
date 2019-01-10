@@ -1,8 +1,8 @@
 /*!
 	@file	rn2483.c
-	@author	Alexander Collins (alexander-collins@outlook.cm)
-	@date	September 2017 - April 2018
-	@brief	A library for embedded platforms that allows for interaction with a Microchip RN2483.
+	@authors	Alexander Collins (alexander-collins@outlook.cm)    Elias Lundheim (elias@tradlosetrondheim.no)
+	@date	September 2017 - April 2018                                 August 2018 - January 2019
+	@brief	A library for nRF52 that allows for interaction with a Microchip RN2483.
 	@see rn2483.h
 */
 //========
@@ -14,7 +14,6 @@
 #include "nRF52_board_config.h"
 #include "Simple_debug_printf.h"
 #include "utilities_lib.h"
-
 //===========
 // FUNCTIONS
 //===========
@@ -62,6 +61,9 @@ static int RN2483_patient_response(uint8_t *buffer, int extraWaitTime)
     else if (strcmp((char*)buffer, "err\r\n")){
         return RN2483_ERR_PANIC;
     }
+    else if (commandLength == 0 ){
+        return RN2483_ERR_PANIC;
+    }
     else if (commandLength == 35){
         // This section handles "RN2483 1.0.1 Dec 15 2015 09:38:09" like responces
         return RN2483_SUCCESS;
@@ -105,6 +107,7 @@ int RN2483_autobaud()
     wait_a_bit(0.01);
     RN2483_firmware(buff);
 
+    // Check if the beginning of the responce is R (From "RN2483 1.0.1 Dec 15 2015 09:38:09" like responces)
     if(buff[0] == 'R'){
         debug_print("Firmware: %s", buff);
         debug_print("Done with autobauding");
@@ -112,7 +115,7 @@ int RN2483_autobaud()
     }
     else
     {
-        return RN2483_ERR_PARAM; // Failure
+        return RN2483_ERR_PANIC; // Failure
     }
 }
 
@@ -339,4 +342,33 @@ int RN2483_tx(const char *buff, bool confirm, char *downlink)
     
     free(response);
     return ret;
+
+
+    int RN2483_sleep(const unsigned int ms)
+    {
+        int ret = RN2483_ERR_PANIC;
+        char responce[RN2483_MAX_BUFF];
+        char *cmd = (char *)malloc(max_len);
+        sprintf(cmd, "sys sleep %u\r\n", ms);
+        ret = RN2483_command(cmd, buffer);
+        free(cmd);
+
+        // If the length of the command we received was 0, then the RN2483 has gone to sleep
+        if (ret==0){
+            return RN2483_SUCCESS;
+        }
+        else if (strcmp(responce, "invalid_param\r\n")){
+            return RN2483_ERR_PARAM;
+        }
+        else if (strcmp(responce, "err")){
+            return RN2483_ERR_PANIC;
+        }
+    }
+
+    int RN2483_wakeUp()
+    {   
+        // Autobaud can wake the module from sleeping
+        return autobaud();
+    }
+
 }

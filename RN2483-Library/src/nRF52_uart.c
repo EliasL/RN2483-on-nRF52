@@ -34,7 +34,7 @@ void nRF52_uart_autobaud(){
 
 void nRF52_uart_long_0x00(){
 
-  // While sending a few 0x00 chars would be a lot simpler, it doesn't work because of the spacer bits between each char
+  // While sending a few 0x00 chars would be a lot simpler, it doesn't work because of spacer bits between each char
   // So the idea is to use a very slow baudrate, and send one 0x00.
 
   // Configure the UARTE with no flow control and 1200 baud rate, the slowest baudrate
@@ -106,7 +106,8 @@ int nRF52_uart_read(uint8_t * buffer, int length, int extraWaitTime){
       }
     }
   }
-  return 0;
+  debug_print("Max char command reached!");
+  return length;
 }
 
 uint8_t nRF52_uart_readSB(){
@@ -138,6 +139,9 @@ void nRF52_uart_claim_pins(){
   // Defined in nRF52_board_config.h
   NRF_UARTE0->PSEL.TXD = nRF52_PIN_TXD;
   NRF_UARTE0->PSEL.RXD = nRF52_PIN_RXD;
+
+  // This lets the nRF wake up from any activity over the RX. NB: The data sent is lost! 
+  NRF_GPIO->PIN_CNF[nRF52_PIN_RXD] = (GPIO_PIN_CNF_SENSE_Enabled << GPIO_PIN_CNF_SENSE_Low); // Don't know if works
 
   // Enable the UART (starts using the TX/RX pins)
   NRF_UARTE0->ENABLE = UARTE_ENABLE_ENABLE_Enabled << UARTE_ENABLE_ENABLE_Pos;

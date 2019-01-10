@@ -6,12 +6,13 @@ CFLAGS += -I../RTT
 SOURCES += ../src/nRF52_uart.c
 SOURCES += ../src/rn2483.c
 SOURCES += ../src/utilities_lib.c
+SOURCES += ../src/application_awake_cycle.c
 SOURCES += ../RTT/SEGGER_RTT_printf.c
 SOURCES += ../RTT/SEGGER_RTT.c
 SOURCES += ../RTT/Simple_debug_printf.c
 
 # We have to use SDK, not MDK because core_cm4.h is not provided in MDK
-xDK_TOP = ../../../nRF5_SDK_15.0.0_a53641a
+xDK_TOP = ../../../common/nRF5_SDK_15.0.0_a53641a
 DEVICE = NRF52
 DEVICE_VARIANT =xxaa
 

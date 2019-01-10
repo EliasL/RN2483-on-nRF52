@@ -4,180 +4,19 @@
 #include "Simple_debug_printf.h"
 #include "utilities_lib.h"
 
-// General variables
-char buffer[RN2483_MAX_BUFF];
-int ret = -1;
 
+/*
+Low power radio
 
-int shut_down(){
-    
-    for(int i = 0; i < 4; i++)
-    {
-        led_toggle(LED_GPIO);
-        wait_a_bit(0.1);
-    }
-    return 1;
-}
+We want both the nRF(nRF52832) and the RN(RN2483) to be asleep as often as possible.
+The RN does not support unlimited sleep (sleep until woken), therefore the nRF must 
+occasionally come be awake in order to put the RN to sleep. 
 
-int ready(){
-    for(int i = 0; i < 10; i++)
-    {
-        led_toggle(LED_GPIO);
-        wait_a_bit(0.05);
-    }
-    led_off(LED_GPIO);
-    return 1;
-}
+When the RN wakes up, it sends "ok\r\n" over UART. We want to use this in order to wake
+the nRF. Since we do not need to know what the RN sent (but just assume it will always 
+be "ok\r\n"), we can let the nRF enter a very deep sleep.
 
-bool autobaud(){
+We use the SENSE option on the RX pin in order to achieve this. We will also enable SENSE 
+on one of the buttons, so that the nRF can be woken up externally. 
 
-    //Autobaud
-    int tries = 0;
-    int maxAttempts = 5;
-    debug_print("Autobauding...");
-    do {
-        tries++;
-        if(tries>1){
-            debug_print("Retrying autobauding. Attempt %d/%d.", tries, maxAttempts);
-            wait_a_bit(0.1);
-        }
-        ret = RN2483_autobaud();
-    } while (ret != RN2483_SUCCESS && tries < maxAttempts);
-    if (ret == RN2483_SUCCESS){
-        return true;
-    }
-    else
-    {
-        debug_print("Failed to autobaud! Resetting nRF52...");
-        wait_a_bit(0.5);
-        shut_down();
-        NVIC_SystemReset(); // Any code beyond this line is not run, because the device has restarted
-        wait_a_bit(0.1);
-        return false;
-    }
-}
-
-bool init_rn2483(){
-    //init rn2483
-    debug_print("Init RN2483 MAC..");
-    if (RN2483_initMAC() != RN2483_SUCCESS)
-    {
-        debug_print("RN2483 initMAC error!");
-        return false;
-    }
-    else{
-        debug_print("Init RN2483 MAC success!");
-        return true;
-    }
-}
-
-bool join(){
-    //Join
-    int tries = 0;
-    int maxAttempts = 4;
-    debug_print("\nAttempting to connect...");
-    do {
-        tries++;
-        if(tries>1){
-            debug_print("Retrying connection. Attempt %d/%d.", tries, maxAttempts);
-        }
-        ret = RN2483_join(RN2483_OTAA);
-    } while (ret != RN2483_SUCCESS && tries < maxAttempts);
-
-    if (ret == RN2483_SUCCESS){
-        return true;
-    }
-    else
-    {
-        debug_print("Failed to join...");
-        return false;
-    }
-}
-
-bool send(const char* message){
-    debug_print("Sending data...");
-
-    //Transmitt
-    ret = RN2483_tx(message, true, buffer);
-    if (ret == RN2483_SUCCESS || ret == RN2483_NODOWN)
-    {
-        debug_print("Data sent!");
-        return true;
-    }
-    else{
-        debug_print("Something went wrong...");
-        return false;
-    }
-}
-
-// This IRQ handler will trigger every 10ms
-// The timer is used to check if the button has been pressed
-void TIMER0_IRQHandler(void)
-{
-  volatile uint32_t dummy;
-  if (NRF_TIMER0->EVENTS_COMPARE[0] == 1)
-  {
-    NRF_TIMER0->EVENTS_COMPARE[0] = 0;
-
-    if(button_is_pressed(BUTTON_GPIO)){
-        led_on(LED_GPIO);
-        send("God jul!");
-        ready();
-    }
-
-    // Read back event register so ensure we have cleared it before exiting IRQ handler.
-    dummy = NRF_TIMER0->EVENTS_COMPARE[0];
-    dummy; // to get rid of set but not used warning
-  }
-}
-
-int main(void)
-{
-//Init
-
-    //init nrf52
-    debug_print("-\n       Initializing TDX on pin %d and RDX on pin %d\n-", nRF52_PIN_TXD, nRF52_PIN_RXD);
-    nRF52_uart_init();
-
-    //init led and button
-    led_init(LED_GPIO);
-    button_init(BUTTON_GPIO);
-
-    //Autobaud
-    if(!autobaud()){
-        // The autobauding attempt has failed, and the device is/has been reset
-        return shut_down();
-    }
-    led_toggle(LED_GPIO);
-
-    //init rn2483
-    if(!init_rn2483()){
-        // The init of the RN2483 has failed.
-        return shut_down();
-    }
-    led_toggle(LED_GPIO);
-
-    //Join
-    if(!join()){
-        // The RN2483 was unable to connect/join the network
-        return shut_down();
-    }
-    led_toggle(LED_GPIO);
-
-    //Send message
-    if(!send("test")){
-        // The message was not sent
-        return shut_down();
-    }
-    ready();
-
-    init_button_check_timer();
-
-    //Wait for button press
-    while (1)
-    {
-        __WFE();
-    }
-    nRF52_uart_quit();
-    return 0;
-}
+*/

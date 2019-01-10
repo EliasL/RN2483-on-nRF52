@@ -61,6 +61,8 @@ enum RN2483_JoinModes {
     @return RN2483_ERR_PANIC if version was not retrieved after toggling the RESET pin
 */
 extern int RN2483_reset();
+
+
 //! Attempts to trigger the auto-baud detection sequence.
 /*!
     Triggers the autobaud detction sequence by sending a break, setting the baudrate and sending 0x55.
@@ -71,18 +73,22 @@ extern int RN2483_reset();
     @return RN2483_ERR_PANIC if RN2483_firmware() failed after autobaud.
 */
 extern int RN2483_autobaud();
+
+
 //! Write a command to the RN2483 and recieve it's response
 /*!
     Send a command to the RN2483, if the command is valid the RN2483's response will be written 
     to response
 
     @return RN2483_ERR_PARAM if the command does not end in "\r\n" (required, see documentation)
+    @return RN2483_ERR_PARAM if response is too slow
     @return RN2483_SUCCESS command was successful and response was valid
 
     @see RN2483 LoRa Technology Module Command Reference User's Guide
 */
-
 extern int	RN2483_patient_command(const char *command, char *response, int extraWaitTime);
+
+
 //! Retrieves the firmware version of the RN2483 module and stores it in buff.
 /*!
     If successful, buff should contain a string that looks like this:
@@ -98,8 +104,9 @@ extern int	RN2483_patient_command(const char *command, char *response, int extra
     @return RN2483_SUCCESS Successfully wrote the firmware version of RN2483 into response
     @return RN2483_ERR_PANIC Managed to read <= 0 bytes...
 */
-
 extern int	RN2483_command(const char *command, char *response);
+
+
 //! Retrieves the firmware version of the RN2483 module and stores it in buff.
 /*!
     If successful, buff should contain a string that looks like this:
@@ -115,6 +122,7 @@ extern int	RN2483_command(const char *command, char *response);
 */
 extern int RN2483_firmware(char *buff);
 
+
 //LoRa
 //! Initialises all the RN2483 MAC settings required to run LoRa commands (join, tx, etc).
 /*!
@@ -127,6 +135,8 @@ extern int RN2483_firmware(char *buff);
 	@return RN2483_ERR_PANIC If this happens something went really wrong when writing a command
 */
 extern int RN2483_initMAC();
+
+
 //! Attempts to join a LoRa network using the specified mode.
 /*!
 	Sends out a request to join local LoRaWAN network in set mode, there are two responses from the 
@@ -144,6 +154,8 @@ extern int RN2483_initMAC();
     @return RN2483_SUCCESS Successfully joined LoRaWAN network
 */
 extern int RN2483_join(int mode);
+
+
 //! Sends a confirmed/unconfirmed frame with an application payload of buff.
 /*!
     Transmits data over a LoRa network in either confirmed or unconfirmed mode.
@@ -156,6 +168,26 @@ extern int RN2483_join(int mode);
     @return RN2483_ERR_JOIN You need to join a LoRaWAN network to TX data over one
 */
 extern int RN2483_tx(const char *buff, bool confirm, char *downlink);
+
+//! Sends a "sys sleep <length>" command, where ms is <length>
+/*!
+    The RN2483 responds with "ok" after given ms has passed. RN2483_sleep does not wait for "ok"
+    but checks for any error responces for a short while
+    
+    @return RN2483_SUCCESS No responce is received
+    @return RN2483_ERR_PARAM Length of ms is not valid (must be between 100 and 4294967295)
+    @return RN2483_ERR_PANIC The RN2483 did not go to sleep
+*/
+int RN2483_sleep(const unsigned int ms);
+
+
+//! Initiates an autobaud sequence in order to wake the RN2483
+/*!
+    @return RN2483_SUCCESS The RN2483 wakes up
+    @return RN2483_ERR_PANIC There is no responce
+    @return RN2483_ERR_PANIC The RN2483 does not autobaud correctly
+*/
+int RN2483_wakeUp();
 
 #endif // RN2483
 
