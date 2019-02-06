@@ -3,6 +3,7 @@
 #include <string.h>
 #include <nrf.h>
 #include <nrf_delay.h>
+#include "../RTT/Simple_debug_printf.h"
 
 /*
 * Function: length_of_string
@@ -37,6 +38,7 @@ void string_memory_location_manipulation(const uint8_t * source, uint8_t * desti
 */
 bool string_contains(uint8_t * whole, uint8_t * piece);
 
+
 /*
 * Function: wait_a_bit
 * ----------------------------
@@ -45,6 +47,55 @@ bool string_contains(uint8_t * whole, uint8_t * piece);
 *  seconds: Number of seconds to wait
 */
 void wait_a_bit(float seconds);
+
+
+/*
+* Function: sleep
+* ----------------------------
+*  Waits for event.
+*/
+void sleep(void);
+
+
+/*
+* Function: init_nRF52_Timer_RTC0
+* ----------------------------
+*  Prepares a very slow and inaccurate timer with the intention of having it create one event before being stopped
+*
+*    m = input number of minutes
+*    ds = desired wait time in seconds
+*    as = actual wait time in seconds
+*    err = error in seconds
+*
+*    m   ds      as       err
+*    1   60      32       28
+*    2   120     96       24
+*    3   180     160      20
+*    8n  60*8*n  60*8*n   0
+*
+*    Use a multiple of 8 for best results
+
+*/
+void init_nRF52_Timer_RTC0();
+
+
+/*
+* Function: wake_up_after_minutes
+* ----------------------------
+*  Starts a timer and waits for an event
+*  The event is meant to come from the timer, but any event will wake it
+*  The timer is stopped in RTC0_IRQHandler
+*/
+void wake_up_after_minutes(unsigned int minutes);
+
+
+/*
+* Function: RTC0_IRQHandler
+* ----------------------------
+*  Stops the timer
+*/
+void RTC0_IRQHandler(void);
+
 
 /*
 * Function: led_init
@@ -55,6 +106,7 @@ void wait_a_bit(float seconds);
 */
 void led_init(const unsigned long led_gpio_pin);
 
+
 /*
 * Function: led_on
 * ----------------------------
@@ -64,6 +116,7 @@ void led_init(const unsigned long led_gpio_pin);
 */
 void led_on(const unsigned long led_gpio_pin);
 
+
 /*
 * Function: led_off
 * ----------------------------
@@ -72,6 +125,7 @@ void led_on(const unsigned long led_gpio_pin);
 *  led_gpio_pin: The pin connected to the led
 */
 void led_off(const unsigned long led_gpio_pin);
+
 
 /*
 * Function: led_toggle
@@ -86,12 +140,12 @@ void led_toggle(const unsigned long led_gpio_pin);
 /*
 * Function: button_init
 * ----------------------------
-*  Initialize pin for handeling a button
+*  Initialize pin for handeling a button (With SENSE)
 *
 *  button_gpio_pin: The pin connected to the button
-*  SENSE_Enabled: Enable or disable sense on button pin
 */
-void button_init(const unsigned long button_gpio_pin, bool SENSE_Enabled);
+void button_init(const unsigned long button_gpio_pin);
+
 
 /*
 * Function: button_is_pressed
@@ -101,11 +155,3 @@ void button_init(const unsigned long button_gpio_pin, bool SENSE_Enabled);
 *  button_gpio_pin: The pin connected to the button
 */
 bool button_is_pressed(const unsigned long button_gpio_pin);
-
-/*
-* Function: init_button_check_timer
-* ----------------------------
-*  Initializes so that TIMER0_IRQHandler will be called every 10 ms
-*
-*/
-void init_button_check_timer();

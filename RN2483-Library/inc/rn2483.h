@@ -167,7 +167,7 @@ extern int RN2483_join(int mode);
     @return RN2483_ERR_BUSY All channels are currently busy, try sending data less frequently
     @return RN2483_ERR_JOIN You need to join a LoRaWAN network to TX data over one
 */
-extern int RN2483_tx(const char *buff, bool confirm, char *downlink);
+int RN2483_tx(const char *buff, bool confirm, char *downlink);
 
 //! Sends a "sys sleep <length>" command, where ms is <length>
 /*!
@@ -179,15 +179,6 @@ extern int RN2483_tx(const char *buff, bool confirm, char *downlink);
     @return RN2483_ERR_PANIC The RN2483 did not go to sleep
 */
 int RN2483_sleep(const unsigned int ms);
-
-
-//! Initiates an autobaud sequence in order to wake the RN2483
-/*!
-    @return RN2483_SUCCESS The RN2483 wakes up
-    @return RN2483_ERR_PANIC There is no responce
-    @return RN2483_ERR_PANIC The RN2483 does not autobaud correctly
-*/
-int RN2483_wakeUp();
 
 #endif // RN2483
 

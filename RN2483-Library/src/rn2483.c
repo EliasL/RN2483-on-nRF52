@@ -49,7 +49,9 @@ static void get_text_string(const char *hex, int hex_len, char *ret)
 // Reads from the RX buffer into response until '\n' or EOB
 static int RN2483_patient_response(uint8_t *buffer, int extraWaitTime)
 {
+    debug_print("WHY");
     int commandLength;
+    debug_print("Test");
     commandLength = nRF52_uart_read(buffer, RN2483_MAX_BUFF, extraWaitTime);
 
     if (strcmp((char*)buffer, "ok\r\n")){
@@ -104,7 +106,7 @@ int RN2483_autobaud()
 
     debug_print("Sending autobaud sequence");
     nRF52_uart_autobaud();
-    wait_a_bit(0.01);
+    wait_a_bit(0.1);
     RN2483_firmware(buff);
 
     // Check if the beginning of the responce is R (From "RN2483 1.0.1 Dec 15 2015 09:38:09" like responces)
@@ -133,9 +135,11 @@ int RN2483_patient_command(const char *command, char *response, int extraWaitTim
     while(attempts <= 5 && (response[0] != 'o' || response[0] != 'R')){ // We want either ok or RN2483
         //send command
         nRF52_uart_write((uint8_t *)command);
+        debug_print("Confirming location");
         debug_print("Sending command: %s", command);
 
         //recv response
+        debug_print("OK?");
         ret = RN2483_patient_response((uint8_t *)response, extraWaitTime);
         debug_print("Response: %s", response);
 
@@ -342,33 +346,26 @@ int RN2483_tx(const char *buff, bool confirm, char *downlink)
     
     free(response);
     return ret;
+}
 
+int RN2483_sleep(const unsigned int ms)
+{
+    int max_len = 59;
+    int ret = RN2483_ERR_PANIC;
+    char responce[RN2483_MAX_BUFF];
+    char *cmd = (char *)malloc(max_len);
+    sprintf(cmd, "sys sleep %u\r\n", ms);
+    ret = RN2483_command(cmd, responce);
+    free(cmd);
 
-    int RN2483_sleep(const unsigned int ms)
-    {
-        int ret = RN2483_ERR_PANIC;
-        char responce[RN2483_MAX_BUFF];
-        char *cmd = (char *)malloc(max_len);
-        sprintf(cmd, "sys sleep %u\r\n", ms);
-        ret = RN2483_command(cmd, buffer);
-        free(cmd);
-
-        // If the length of the command we received was 0, then the RN2483 has gone to sleep
-        if (ret==0){
-            return RN2483_SUCCESS;
-        }
-        else if (strcmp(responce, "invalid_param\r\n")){
-            return RN2483_ERR_PARAM;
-        }
-        else if (strcmp(responce, "err")){
-            return RN2483_ERR_PANIC;
-        }
+    // If the length of the command we received was 0, then the RN2483 has gone to sleep
+    if (ret==0){
+        return RN2483_SUCCESS;
     }
-
-    int RN2483_wakeUp()
-    {   
-        // Autobaud can wake the module from sleeping
-        return autobaud();
+    else if (strcmp(responce, "invalid_param\r\n")){
+        return RN2483_ERR_PARAM;
     }
-
+    else{
+        return RN2483_ERR_PANIC;
+    }
 }

@@ -88,6 +88,7 @@ int nRF52_uart_read(uint8_t * buffer, int length, int extraWaitTime){
   int beginningSpaceCounter = 0;
 
   for(int i=0; i<length;i++){
+    debug_print("%d",i);
     buffer[i] = nRF52_uart_readSB();
     //Check for the end of the message
     if(buffer[i]=='\n'){
@@ -141,7 +142,7 @@ void nRF52_uart_claim_pins(){
   NRF_UARTE0->PSEL.RXD = nRF52_PIN_RXD;
 
   // This lets the nRF wake up from any activity over the RX. NB: The data sent is lost! 
-  NRF_GPIO->PIN_CNF[nRF52_PIN_RXD] = (GPIO_PIN_CNF_SENSE_Enabled << GPIO_PIN_CNF_SENSE_Low); // Don't know if works
+  NRF_GPIO->PIN_CNF[nRF52_PIN_RXD] = (GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos); // Don't know if works
 
   // Enable the UART (starts using the TX/RX pins)
   NRF_UARTE0->ENABLE = UARTE_ENABLE_ENABLE_Enabled << UARTE_ENABLE_ENABLE_Pos;

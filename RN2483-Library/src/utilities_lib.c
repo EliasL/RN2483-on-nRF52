@@ -42,12 +42,22 @@ bool string_contains(uint8_t *whole, uint8_t *piece){
 }
 
 void wait_a_bit(float seconds){
-  ms = (int)seconds * 1000;
+  int ms = (int)seconds * 1000;
   nrf_delay_ms(ms);
 }
 
-void wake_up_after_minutes(unsigned int minutes){
-  /* This is a very inaccurate timer (pm.32s). See table below
+void sleep(void){
+
+  debug_print("Entering sleep until awoken.");
+  // Low level bug makes it neccecary to do these three things instead of just waiting once.
+  __WFE();
+  __SEV();
+  __WFE();
+  debug_print("Awake!");
+}
+
+void init_nRF52_Timer_RTC0(){
+  /* This is a very inaccurate timer (pm.28s). See table below
     m = input number of minutes
     ds = desired wait time in seconds
     as = actual wait time in seconds
@@ -60,17 +70,6 @@ void wake_up_after_minutes(unsigned int minutes){
     8n  60*8*n  60*8*n   0
 
     Use a multiple of 8 for best results
-
-  I should do this:
-
-  To optimize RTC power consumption, events in the RTC can be individually
-  disabled to prevent PCLK16M and HFCLK being requested when those events
-  are triggered. This is managed using the EVTEN register.
-
-  For example, if the TICK event is not required for an application, this
-  event should be disabled as it is frequently occurring and may increase
-  power consumption if HFCLK otherwise could be powered down for long durations.
-
   */
 
   // Start LFCLK (32kHz) crystal oscillator. If you don't have crystal on your board, choose RCOSC instead.
@@ -81,33 +80,50 @@ void wake_up_after_minutes(unsigned int minutes){
 
 
   // 32 second timer period
-  NRF_RTC0->PRESCALER = 1048575; //2^20-1 (It would be interesting to compare power consumption with different prescalers)
+  NRF_RTC0->PRESCALER = 10485;//7;//5; //2^20-1 (It would be interesting to compare power consumption with different prescalers)
 
-  // Find best compare value
-  unsigned int cc = (minutes*60)/32;
-  //(Yes the error could be lowered by rounding to nearest integer, there is no reason to be only twice as presice.)
-
-  // 30.5ms us compare value, generates EVENTS_COMPARE[0]
-  NRF_RTC0->CC[0] = cc;
+  //NB Compare value has not been set! This is done in wake_up_after_minutes to make the timer only create one event after desired time has passed
 
   // Enable EVENTS_COMPARE[0] generation
   NRF_RTC0->EVTENSET = RTC_EVTENSET_COMPARE0_Enabled << RTC_EVTENSET_COMPARE0_Pos;
   // Enable IRQ on EVENTS_COMPARE[0]
   NRF_RTC0->INTENSET = RTC_INTENSET_COMPARE0_Enabled << RTC_INTENSET_COMPARE0_Pos;
 
-  // Enable RTC IRQ and start the RTC
+  // Enable RTC IRQ
   NVIC_EnableIRQ(RTC0_IRQn);
-  NRF_RTC0->TASKS_START = 1;
-
-  //Power down 
-
 }
 
-void TIMER0_IRQHandler(void){
-  // Power up and stop timer
+void wake_up_after_minutes(unsigned int minutes){
 
+  // Setting "alarmclock" to wake itself
+  debug_print("Preparing self monitored sleep.");
+  // Find best compare value
+  unsigned int cc = (minutes*60)/32;
+  //(Yes the error could be lowered by rounding (instead of flooring) to nearest integer, but there is no reason to be only twice as presice.)
+  // generates EVENTS_COMPARE[0]
+  NRF_RTC0->CC[0] = cc;
+  NRF_RTC0->TASKS_START = 1;
+  sleep();
+}
 
+void RTC0_IRQHandler(void){ // NOT WORKING YET
+  debug_print("EVENT...");
+  volatile uint32_t dummy;
+  if (NRF_RTC0->EVENTS_COMPARE[0] == 1)
+  {
+    NRF_RTC0->EVENTS_COMPARE[0] = 0;
 
+    debug_print("EVENT: Wake up!");
+    // Stop the timer
+    NRF_RTC0->TASKS_STOP = 1;
+
+    // Reset counter
+    NRF_RTC0->CC[0] = NRF_RTC0->COUNTER + 100000; // Only to prevent spam if it doesn't work
+
+    // Read back event register so ensure we have cleared it before exiting IRQ handler.
+    dummy = NRF_RTC0->EVENTS_COMPARE[0];
+    dummy;
+  }
 } 
 
 void led_init(const unsigned long led_gpio_pin){
@@ -117,7 +133,7 @@ void led_init(const unsigned long led_gpio_pin){
                                    (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos) |
                                    (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos) |
                                    (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos) |
-                                   (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos);
+                                   (GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos);
 }
 
 void led_off(const unsigned long led_gpio_pin){
@@ -139,23 +155,14 @@ void led_toggle(const unsigned long led_gpio_pin){
   }
 }
 
-void button_init(const unsigned long button_gpio_pin, bool SENSE_Enabled){
+void button_init(const unsigned long button_gpio_pin){
   // Configure the GPIO pin for Button 1 on the nRF52832 dev kit
   // as input with pull-up resistor enabled.
-  if (SENSE_Enabled){
-    NRF_GPIO->PIN_CNF[button_gpio_pin] = (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos) |
-                                    (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos) |
-                                    (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos) |
-                                    (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos) |
-                                    (GPIO_PIN_CNF_SENSE_Enabled << GPIO_PIN_CNF_SENSE_Low); //Don't know if works
-  }
-  else{
-    NRF_GPIO->PIN_CNF[button_gpio_pin] = (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos) |
-                                    (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos) |
-                                    (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos) |
-                                    (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos) |
-                                    (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos);
-  }
+  NRF_GPIO->PIN_CNF[button_gpio_pin] = (GPIO_PIN_CNF_DIR_Input << GPIO_PIN_CNF_DIR_Pos) |
+                                  (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos) |
+                                  (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos) |
+                                  (GPIO_PIN_CNF_PULL_Pullup << GPIO_PIN_CNF_PULL_Pos) |
+                                  (GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos); //Don't know if works
 }
 
 bool button_is_pressed( const unsigned long button_gpio_pin){
