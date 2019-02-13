@@ -11,7 +11,7 @@ you need to change these values accordingly.
 #define LED_GPIO  (17UL)
 #define nRF52_PIN_TXD (22) 
 #define nRF52_PIN_RXD (23)
-#define nRF52_RESET_PIN (27) // Usually not soldered on the Shield
+#define nRF52_RESET_PIN (27) // Sometimes not soldered on some shields
 
 //Non-board related definitions
 #define PIN_HIGH (1)

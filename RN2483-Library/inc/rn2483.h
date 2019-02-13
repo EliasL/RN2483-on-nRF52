@@ -1,6 +1,6 @@
 /*!
 	@file	rn2483.h
-	@author	Alexander Collins (alexander-collins@outlook.com)
+	@authors	Alexander Collins (alexander-collins@outlook.cm)    Elias Lundheim (elias@tradlosetrondheim.no)
 	@date	September 2017 - April 2018
 	@brief	A library for embedded platforms that allows for interaction with a Microchip RN2483.
 
