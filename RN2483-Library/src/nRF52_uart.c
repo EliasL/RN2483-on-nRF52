@@ -88,7 +88,6 @@ int nRF52_uart_read(uint8_t * buffer, int length, int extraWaitTime){
   int beginningSpaceCounter = 0;
 
   for(int i=0; i<length;i++){
-    debug_print("%d",i);
     buffer[i] = nRF52_uart_readSB();
     //Check for the end of the message
     if(buffer[i]=='\n'){
@@ -102,12 +101,11 @@ int nRF52_uart_read(uint8_t * buffer, int length, int extraWaitTime){
       i--;
       beginningSpaceCounter++;
       if(beginningSpaceCounter >= maxSpaceChars){
-        debug_print("Timeout!");
+        debug_print("Uart read timeout!");
         return 0;
       }
     }
   }
-  debug_print("Max char command reached!");
   return length;
 }
 

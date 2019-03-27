@@ -49,9 +49,7 @@ static void get_text_string(const char *hex, int hex_len, char *ret)
 // Reads from the RX buffer into response until '\n' or EOB
 static int RN2483_patient_response(uint8_t *buffer, int extraWaitTime)
 {
-    debug_print("WHY");
     int commandLength;
-    debug_print("Test");
     commandLength = nRF52_uart_read(buffer, RN2483_MAX_BUFF, extraWaitTime);
 
     if (strcmp((char*)buffer, "ok\r\n")){
@@ -135,11 +133,9 @@ int RN2483_patient_command(const char *command, char *response, int extraWaitTim
     while(attempts <= 5 && (response[0] != 'o' || response[0] != 'R')){ // We want either ok or RN2483
         //send command
         nRF52_uart_write((uint8_t *)command);
-        debug_print("Confirming location");
         debug_print("Sending command: %s", command);
 
         //recv response
-        debug_print("OK?");
         ret = RN2483_patient_response((uint8_t *)response, extraWaitTime);
         debug_print("Response: %s", response);
 
@@ -349,7 +345,8 @@ int RN2483_tx(const char *buff, bool confirm, char *downlink)
 }
 
 int RN2483_sleep(const unsigned int ms)
-{
+{   
+    debug_print("Putting RN to sleep");
     int max_len = 59;
     int ret = RN2483_ERR_PANIC;
     char responce[RN2483_MAX_BUFF];

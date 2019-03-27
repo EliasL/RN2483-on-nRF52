@@ -6,18 +6,18 @@ int ret = -1;
 
 void application_sleep(const unsigned int sleepDuration){
     
-    ret = RN2483_sleep(sleepDuration);
-    if(ret==RN2483_SUCCESS){
+    ret = RN2483_sleep(sleepDuration*1000);
+    if(ret==RN2483_SUCCESS){ // SUCCESS is just that there was no responce
         sleep();
     }
 
     else{
-        self_monitored_sleep(1); // Use 1 for testing, and use something like 64 or 256 otherwise.  
+        self_monitored_sleep(sleepDuration);
     }
 }
 
-void self_monitored_sleep(const unsigned int sleepDurationMinutes){
-    wake_up_after_minutes(sleepDurationMinutes);
+void self_monitored_sleep(const unsigned int sleepDurationSeconds){
+    wake_up_after_seconds(sleepDurationSeconds);
 }
 
 bool autobaud(void){
@@ -135,7 +135,7 @@ void application_init(const unsigned int retryDelay, bool nRF_init){
         // The autobauding attempt has failed
         // DO NOT use application_sleep, since the autobaud has failed, the RN might be unresponsive. This will make
         // the nRF think the RN has succesfully gone to sleep. If application_sleep is used here, the nRF might sleep forever
-        self_monitored_sleep(1); // Use 1 for testing, otherwise maybe 64 or 256
+        self_monitored_sleep(retryDelay);
     }
     led_toggle(LED_GPIO);
 

@@ -10,8 +10,10 @@ Low power radio
 */
 
 int main(){
-    const unsigned int retryDelay = 1;
-    const unsigned int sleepDelay = 1;
+    const unsigned int retryDelay = 10;
+    const unsigned int sleepDelay = 10;
+
+    
     
     application_init(retryDelay, true);
     while(true){

@@ -1,5 +1,7 @@
 #include "utilities_lib.h"
 
+unsigned int secondsUntilAwake=0; // Not really seconds, but a bit more like 2/3 seconds
+
 int length_of_string(const uint8_t *string){
   uint16_t MAX_STRING_SIZE = 65535;
   uint16_t STRING_LENGTH = 0;
@@ -42,35 +44,30 @@ bool string_contains(uint8_t *whole, uint8_t *piece){
 }
 
 void wait_a_bit(float seconds){
+  //Don't use this function
   int ms = (int)seconds * 1000;
   nrf_delay_ms(ms);
 }
 
 void sleep(void){
-
-  debug_print("Entering sleep until awoken.");
-  // Low level bug makes it neccecary to do these three things instead of just waiting once.
-  __WFE();
-  __SEV();
-  __WFE();
+  
+  if(secondsUntilAwake > 0){
+      
+    debug_print("Entering sleep for %d \"seconds\".", secondsUntilAwake);
+    while(secondsUntilAwake>0){
+      __WFE();
+      __SEV();
+      __WFE();
+      secondsUntilAwake--;
+    }
+  }
+  else{
+    debug_print("Warning! Cannot enter sleep without secondsUntilAwake > 0.");
+  }
   debug_print("Awake!");
 }
 
 void init_nRF52_Timer_RTC0(){
-  /* This is a very inaccurate timer (pm.28s). See table below
-    m = input number of minutes
-    ds = desired wait time in seconds
-    as = actual wait time in seconds
-    err = error in seconds
-
-    m   ds      as       err
-    1   60      32       28
-    2   120     96       24
-    3   180     160      20
-    8n  60*8*n  60*8*n   0
-
-    Use a multiple of 8 for best results
-  */
 
   // Start LFCLK (32kHz) crystal oscillator. If you don't have crystal on your board, choose RCOSC instead.
   NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_Xtal << CLOCK_LFCLKSRC_SRC_Pos;
@@ -79,10 +76,12 @@ void init_nRF52_Timer_RTC0(){
   NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
 
 
-  // 32 second timer period
-  NRF_RTC0->PRESCALER = 10485;//7;//5; //2^20-1 (It would be interesting to compare power consumption with different prescalers)
+  // 0.1 second timer
+  NRF_RTC0->PRESCALER = 3275; // (It would be interesting to compare power consumption with different prescalers)
 
-  //NB Compare value has not been set! This is done in wake_up_after_minutes to make the timer only create one event after desired time has passed
+  //  1s compare value, generates EVENTS_COMPARE[0] after one second second
+  NRF_RTC0->CC[0] = 10;
+
 
   // Enable EVENTS_COMPARE[0] generation
   NRF_RTC0->EVTENSET = RTC_EVTENSET_COMPARE0_Enabled << RTC_EVTENSET_COMPARE0_Pos;
@@ -91,34 +90,22 @@ void init_nRF52_Timer_RTC0(){
 
   // Enable RTC IRQ
   NVIC_EnableIRQ(RTC0_IRQn);
+  NRF_RTC0->TASKS_START = 1;
 }
 
-void wake_up_after_minutes(unsigned int minutes){
-
-  // Setting "alarmclock" to wake itself
-  debug_print("Preparing self monitored sleep.");
-  // Find best compare value
-  unsigned int cc = (minutes*60)/32;
-  //(Yes the error could be lowered by rounding (instead of flooring) to nearest integer, but there is no reason to be only twice as presice.)
-  // generates EVENTS_COMPARE[0]
-  NRF_RTC0->CC[0] = cc;
-  NRF_RTC0->TASKS_START = 1;
+void wake_up_after_seconds(unsigned int seconds){
+  secondsUntilAwake = seconds;
   sleep();
 }
 
-void RTC0_IRQHandler(void){ // NOT WORKING YET
-  debug_print("EVENT...");
+void RTC0_IRQHandler(void){ // It's not really one second, but it shouldn't matter too much
   volatile uint32_t dummy;
   if (NRF_RTC0->EVENTS_COMPARE[0] == 1)
   {
     NRF_RTC0->EVENTS_COMPARE[0] = 0;
 
-    debug_print("EVENT: Wake up!");
-    // Stop the timer
-    NRF_RTC0->TASKS_STOP = 1;
-
-    // Reset counter
-    NRF_RTC0->CC[0] = NRF_RTC0->COUNTER + 100000; // Only to prevent spam if it doesn't work
+    // Add one to counter so event is called next second
+    NRF_RTC0->CC[0] = NRF_RTC0->COUNTER + 10; // Only to prevent spam if it doesn't work
 
     // Read back event register so ensure we have cleared it before exiting IRQ handler.
     dummy = NRF_RTC0->EVENTS_COMPARE[0];
