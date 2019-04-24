@@ -43,17 +43,7 @@ Notes:
 *
 *   sleepDuration: time in ms, must be between 100 and 4294967295
 */
-void application_sleep(const unsigned int sleepDuration);
-
-
-/*
-* Function: self_monitored_sleep
-* ----------------------------
-*   Puts the nRF to sleep for some inaccurate amount of time.
-*   
-*  sleepDurationMinutes: Approximate wait time in minutes (plus minus 28 seconds)
-*/
-void self_monitored_sleep(const unsigned int sleepDurationMinutes);
+void application_sleep();
 
 
 /*
@@ -63,7 +53,7 @@ void self_monitored_sleep(const unsigned int sleepDurationMinutes);
 *
 *   return: autobaud was successful
 */
-bool autobaud(void);
+bool autobaud();
 
 
 /*
@@ -73,7 +63,7 @@ bool autobaud(void);
 *
 *   return: init was successful
 */
-bool init_RN2483(void);
+bool init_RN2483();
 
 /*
 * Function: join
@@ -82,7 +72,7 @@ bool init_RN2483(void);
 *
 *   return: join was successful
 */
-bool join(void );
+bool join();
 
 /*
 * Function: send
@@ -95,7 +85,7 @@ bool join(void );
 *
 *   return: send was successful
 */
-bool send(const char* message, const unsigned int retryDelay);
+bool send(const char* message);
 
 
 /*
@@ -106,7 +96,7 @@ bool send(const char* message, const unsigned int retryDelay);
 *   retryDelay: Delay bettween retry if something goes wrong
 *   nRF_init: do nRF related inits? (Always performs RN init) 
 */
-void application_init(const unsigned int retryDelay, bool nRF_init);
+void application_init();
 
 /*
 * Function: application_awake_cycle
@@ -116,4 +106,4 @@ void application_init(const unsigned int retryDelay, bool nRF_init);
 *   sleepDuration: Duration of sleep after successfully sending data
 *   retryDelay: Delay bettween retry if something goes wrong
 */
-void application_awake_cycle(const unsigned int sleepDuration, const unsigned int retryDelay);
+void application_awake_cycle();

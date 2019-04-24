@@ -47,10 +47,10 @@ static void get_text_string(const char *hex, int hex_len, char *ret)
 }
 
 // Reads from the RX buffer into response until '\n' or EOB
-static int RN2483_patient_response(uint8_t *buffer, int extraWaitTime)
+static int RN2483_response(uint8_t *buffer)
 {
     int commandLength;
-    commandLength = nRF52_uart_read(buffer, RN2483_MAX_BUFF, extraWaitTime);
+    commandLength = nRF52_UART_blocking_read(buffer);
 
     if (strcmp((char*)buffer, "ok\r\n")){
         return RN2483_SUCCESS;
@@ -73,11 +73,6 @@ static int RN2483_patient_response(uint8_t *buffer, int extraWaitTime)
         debug_print("Add appropriate responce for %s", buffer);
         return RN2483_ERR_PANIC;
     }
-}
-
-static int RN2483_response(uint8_t *buffer)
-{
-    return RN2483_patient_response(buffer, 1);
 }
 
 //PUBLIC
@@ -103,8 +98,8 @@ int RN2483_autobaud()
     char buff[RN2483_MAX_BUFF] = "";
 
     debug_print("Sending autobaud sequence");
-    nRF52_uart_autobaud();
-    wait_a_bit(0.1);
+    nRF52_UART_autobaud();
+    wait_a_bit(0.01);
     RN2483_firmware(buff);
 
     // Check if the beginning of the responce is R (From "RN2483 1.0.1 Dec 15 2015 09:38:09" like responces)
@@ -120,7 +115,7 @@ int RN2483_autobaud()
 }
 
 // Sends a command to the RN2483 and sets the response in buffer
-int RN2483_patient_command(const char *command, char *response, int extraWaitTime)
+int RN2483_command(const char *command, char *response)
 {
 	//check command ends with \r\n (easy to forget)
 	int end = strlen(command);
@@ -132,11 +127,11 @@ int RN2483_patient_command(const char *command, char *response, int extraWaitTim
     response[0] = ' ';
     while(attempts <= 5 && (response[0] != 'o' || response[0] != 'R')){ // We want either ok or RN2483
         //send command
-        nRF52_uart_write((uint8_t *)command);
+        nRF52_UART_write((uint8_t *)command);
         debug_print("Sending command: %s", command);
 
         //recv response
-        ret = RN2483_patient_response((uint8_t *)response, extraWaitTime);
+        ret = RN2483_response((uint8_t *)response);
         debug_print("Response: %s", response);
 
 
@@ -145,12 +140,6 @@ int RN2483_patient_command(const char *command, char *response, int extraWaitTim
         attempts++;
     }
     return ret;
-}
-
-// Sends a command to the RN2483 and sets the response in buffer
-int RN2483_command(const char *command, char *response)
-{
-	return RN2483_patient_command(command, response, 1);
 }
 
 // Retrieves the firmware version of the RN2483 module and stores it in buff.
@@ -164,6 +153,7 @@ int RN2483_firmware( char *buff)
 // Initialises all the RN2483 MAC settings required to run LoRa commands (join, tx, etc).
 int RN2483_initMAC()
 {
+    RN2483_autobaud();
     int i = -1;
 	int ret = RN2483_ERR_PANIC;
 	char *response = (char *)malloc(RN2483_MAX_BUFF);
@@ -248,7 +238,7 @@ int RN2483_join(int mode)
         if (strcmp(response, "ok\r\n") == 0)
         {
             debug_print("Waiting for network responce...");
-            RN2483_patient_response((uint8_t *)response, 10);
+            RN2483_response((uint8_t *)response);
             debug_print("Network responce: %s", response);
             if (strcmp(response, "accepted\r\n") == 0)
                 ret = RN2483_SUCCESS;
@@ -300,7 +290,7 @@ int RN2483_tx(const char *buff, bool confirm, char *downlink)
         sprintf(cmd, "mac tx cnf %s %s\r\n", LoRaWAN_Port, payload);
     else
         sprintf(cmd, "mac tx uncnf %s %s\r\n", LoRaWAN_Port, payload);
-    ret = RN2483_patient_command(cmd, response, 10);
+    ret = RN2483_command(cmd, response);
     free(cmd);
 
     if (ret == RN2483_SUCCESS)
@@ -344,25 +334,11 @@ int RN2483_tx(const char *buff, bool confirm, char *downlink)
     return ret;
 }
 
-int RN2483_sleep(const unsigned int ms)
+void RN2483_sleep(const unsigned int ms)
 {   
     debug_print("Putting RN to sleep");
     int max_len = 59;
-    int ret = RN2483_ERR_PANIC;
-    char responce[RN2483_MAX_BUFF];
     char *cmd = (char *)malloc(max_len);
     sprintf(cmd, "sys sleep %u\r\n", ms);
-    ret = RN2483_command(cmd, responce);
-    free(cmd);
-
-    // If the length of the command we received was 0, then the RN2483 has gone to sleep
-    if (ret==0){
-        return RN2483_SUCCESS;
-    }
-    else if (strcmp(responce, "invalid_param\r\n")){
-        return RN2483_ERR_PARAM;
-    }
-    else{
-        return RN2483_ERR_PANIC;
-    }
+    nRF52_UART_write((const uint8_t*)cmd);
 }

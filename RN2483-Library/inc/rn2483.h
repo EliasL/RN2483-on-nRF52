@@ -173,12 +173,8 @@ int RN2483_tx(const char *buff, bool confirm, char *downlink);
 /*!
     The RN2483 responds with "ok" after given ms has passed. RN2483_sleep does not wait for "ok"
     but checks for any error responces for a short while
-    
-    @return RN2483_SUCCESS No responce is received
-    @return RN2483_ERR_PARAM Length of ms is not valid (must be between 100 and 4294967295)
-    @return RN2483_ERR_PANIC The RN2483 did not go to sleep
 */
-int RN2483_sleep(const unsigned int ms);
+void RN2483_sleep(const unsigned int ms);
 
 #endif // RN2483
 

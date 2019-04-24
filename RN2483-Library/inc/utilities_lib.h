@@ -28,7 +28,7 @@ void string_memory_location_manipulation(const uint8_t * source, uint8_t * desti
 
 
 /*
-* Function: stringContains
+* Function: string_contains
 * ----------------------------
 *  Checks if a string contains another string
 * 
@@ -38,12 +38,22 @@ void string_memory_location_manipulation(const uint8_t * source, uint8_t * desti
 */
 bool string_contains(uint8_t * whole, uint8_t * piece);
 
+/*
+* Function: string_cntains_char
+* ----------------------------
+*  Checks if a string contains another string
+* 
+*  string: A string of length length
+*  length: the length of the string
+*  piece: the char that might be in the string
+*  return: true if the char is in the string, if not, false
+*/
+bool string_contains_char(uint8_t * string, int length, char piece);
+
 
 /*
 * Function: wait_a_bit
 * ----------------------------
-*  Runs a long loop, not a good solution.
-*
 *  seconds: Number of seconds to wait
 */
 void wait_a_bit(float seconds);
@@ -140,3 +150,12 @@ void button_init(const unsigned long button_gpio_pin);
 *  button_gpio_pin: The pin connected to the button
 */
 bool button_is_pressed(const unsigned long button_gpio_pin);
+
+/*
+* Function: get_temperature
+* ----------------------------
+*  Returns the temperature
+*
+*  button_gpio_pin: temperature in celcius
+*/
+int32_t get_temperature();

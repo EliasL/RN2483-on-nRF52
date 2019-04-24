@@ -1,6 +1,6 @@
 #include "utilities_lib.h"
 
-unsigned int secondsUntilAwake=0; // Not really seconds, but a bit more like 2/3 seconds
+void (*oneSecondFunc)();
 
 int length_of_string(const uint8_t *string){
   uint16_t MAX_STRING_SIZE = 65535;
@@ -20,6 +20,12 @@ int length_of_string(const uint8_t *string){
   }
 
   return STRING_LENGTH;
+}
+
+void wait_a_bit(float seconds){
+  //Don't use this function
+  int ms = (int)(seconds * 1000);
+  nrf_delay_ms(ms);
 }
 
 void string_memory_location_manipulation(const uint8_t * source, uint8_t * destination, int STRING_LENGTH){
@@ -42,29 +48,13 @@ bool string_contains(uint8_t *whole, uint8_t *piece){
   }
   return false;
 }
-
-void wait_a_bit(float seconds){
-  //Don't use this function
-  int ms = (int)seconds * 1000;
-  nrf_delay_ms(ms);
-}
-
-void sleep(void){
-  
-  if(secondsUntilAwake > 0){
-      
-    debug_print("Entering sleep for %d \"seconds\".", secondsUntilAwake);
-    while(secondsUntilAwake>0){
-      __WFE();
-      __SEV();
-      __WFE();
-      secondsUntilAwake--;
+bool string_contains_char(uint8_t *string, int length, char piece){
+  for(int i = 0; i<length; i++){
+    if(string[i] == piece){
+      return true;
     }
   }
-  else{
-    debug_print("Warning! Cannot enter sleep without secondsUntilAwake > 0.");
-  }
-  debug_print("Awake!");
+  return false;
 }
 
 void init_nRF52_Timer_RTC0(){
@@ -75,12 +65,12 @@ void init_nRF52_Timer_RTC0(){
   while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0);
   NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
 
-
-  // 0.1 second timer
-  NRF_RTC0->PRESCALER = 3275; // (It would be interesting to compare power consumption with different prescalers)
+  // f_RTC [kHz] = 32.768 / (PRESCALER + 1 )
+  // 1 second timer
+  NRF_RTC0->PRESCALER = 32769;
 
   //  1s compare value, generates EVENTS_COMPARE[0] after one second second
-  NRF_RTC0->CC[0] = 10;
+  NRF_RTC0->CC[0] = 1;
 
 
   // Enable EVENTS_COMPARE[0] generation
@@ -93,23 +83,24 @@ void init_nRF52_Timer_RTC0(){
   NRF_RTC0->TASKS_START = 1;
 }
 
-void wake_up_after_seconds(unsigned int seconds){
-  secondsUntilAwake = seconds;
-  sleep();
-}
-
-void RTC0_IRQHandler(void){ // It's not really one second, but it shouldn't matter too much
+void RTC0_IRQHandler(void){
   volatile uint32_t dummy;
   if (NRF_RTC0->EVENTS_COMPARE[0] == 1)
   {
     NRF_RTC0->EVENTS_COMPARE[0] = 0;
 
-    // Add one to counter so event is called next second
-    NRF_RTC0->CC[0] = NRF_RTC0->COUNTER + 10; // Only to prevent spam if it doesn't work
+    // Add to counter so event is called again
+    NRF_RTC0->CC[0] = NRF_RTC0->COUNTER + 1;
 
     // Read back event register so ensure we have cleared it before exiting IRQ handler.
     dummy = NRF_RTC0->EVENTS_COMPARE[0];
     dummy;
+
+    if(oneSecondFunc != 0){
+      oneSecondFunc();
+      oneSecondFunc = 0;
+    }
+
   }
 } 
 
@@ -119,8 +110,7 @@ void led_init(const unsigned long led_gpio_pin){
   NRF_GPIO->PIN_CNF[led_gpio_pin] = (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos) |
                                    (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos) |
                                    (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos) |
-                                   (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos) |
-                                   (GPIO_PIN_CNF_SENSE_Low << GPIO_PIN_CNF_SENSE_Pos);
+                                   (GPIO_PIN_CNF_PULL_Disabled << GPIO_PIN_CNF_PULL_Pos);
 }
 
 void led_off(const unsigned long led_gpio_pin){
@@ -155,4 +145,25 @@ void button_init(const unsigned long button_gpio_pin){
 bool button_is_pressed( const unsigned long button_gpio_pin){
 	// Get the value set in the "pin2-th bit and shift it to get 1 or 0
   return !((NRF_GPIO->IN >> button_gpio_pin) & 1UL);
+}
+
+int32_t get_temperature(){
+  
+  volatile int32_t temperature;
+
+  // Start HFCLK crystal oscillator, since that will give highest accuracy
+  NRF_CLOCK->TASKS_HFCLKSTART = 1;
+  while (NRF_CLOCK->EVENTS_HFCLKSTARTED == 0);
+  NRF_CLOCK->EVENTS_HFCLKSTARTED = 0;
+
+  // Trigger temperature measurement
+  NRF_TEMP->TASKS_START = 1;
+
+  // Wait until measurement is finished
+  while (NRF_TEMP->EVENTS_DATARDY == 0);
+  NRF_TEMP->EVENTS_DATARDY = 0;
+  NRF_CLOCK->TASKS_HFCLKSTOP = 1;
+  // Read temperature and convert to celcius (rounding down)
+  temperature = (int32_t)NRF_TEMP->TEMP / 4;
+  return temperature;
 }

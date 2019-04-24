@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "nrf52_board_config.h": "c"
+    },
+    "cSpell.words": [
+        "endrx",
+        "rxdrdy",
+        "rxstarted",
+        "startrx",
+        "tasks"
+    ]
+}

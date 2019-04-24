@@ -1,48 +1,10 @@
 #include "application.h"
 
+#define SLEEPDURATION 20000
+
 // General variables
 char buffer[RN2483_MAX_BUFF];
 int ret = -1;
-
-void application_sleep(const unsigned int sleepDuration){
-    
-    ret = RN2483_sleep(sleepDuration*1000);
-    if(ret==RN2483_SUCCESS){ // SUCCESS is just that there was no responce
-        sleep();
-    }
-
-    else{
-        self_monitored_sleep(sleepDuration);
-    }
-}
-
-void self_monitored_sleep(const unsigned int sleepDurationSeconds){
-    wake_up_after_seconds(sleepDurationSeconds);
-}
-
-bool autobaud(void){
-
-    //Autobaud
-    int tries = 0;
-    int maxAttempts = 5;
-    debug_print("Autobauding...");
-    do {
-        tries++;
-        if(tries>1){
-            debug_print("Retrying autobauding. Attempt %d/%d.", tries, maxAttempts);
-            wait_a_bit(0.1);
-        }
-        ret = RN2483_autobaud();
-    } while (ret != RN2483_SUCCESS && tries < maxAttempts);
-    if (ret == RN2483_SUCCESS){
-        return true;
-    }
-    else
-    {
-        debug_print("Failed to autobaud!");
-        return false;
-    }
-}
 
 bool init_RN2483(void){
     //init rn2483
@@ -56,6 +18,11 @@ bool init_RN2483(void){
         debug_print("Init RN2483 MAC success!");
         return true;
     }
+}
+
+void application_sleep(){
+    debug_print("Entering sleep");
+    RN2483_sleep(SLEEPDURATION);
 }
 
 bool join(void){
@@ -81,7 +48,7 @@ bool join(void){
     }
 }
 
-bool send(const char* message, const unsigned int retryDelay){
+bool send(const char* message){
     debug_print("Sending data...");
 
     //Transmitt
@@ -97,7 +64,7 @@ bool send(const char* message, const unsigned int retryDelay){
         debug_print("Rejoining...");
         while(!join()){
             // The RN2483 was unable to connect/join the network
-            application_sleep(retryDelay);
+            application_sleep();
         }
         return false;
     }
@@ -105,7 +72,7 @@ bool send(const char* message, const unsigned int retryDelay){
         debug_print("Something went very wrong...");
         // We have to redo the init
         debug_print("Re-initializing...");
-        application_init(retryDelay, false);
+        application_init();
         return false;
     }
     else{
@@ -115,57 +82,39 @@ bool send(const char* message, const unsigned int retryDelay){
     }
 }
 
-void application_init(const unsigned int retryDelay, bool nRF_init){
+void application_init(){
     //Init start ----
-    if(nRF_init){
-        //init nrf52
-        debug_print("-\n       Initializing TDX on pin %d and RDX on pin %d\n-", nRF52_PIN_TXD, nRF52_PIN_RXD);
-        nRF52_uart_init();
-        init_nRF52_Timer_RTC0(); // init timer
 
-        //init led and button
-        #if LIGHT
-            led_init(LED_GPIO);
-        #endif
-        button_init(BUTTON_GPIO);
-    }
+    //init nrf52
+    debug_print("-\n       Initializing TDX on pin %d and RDX on pin %d\n-", nRF52_PIN_TXD, nRF52_PIN_RXD);
+    nRF52_UART_init();
+    //init_nRF52_Timer_RTC0(); // init timer
 
-    //autobaud
-    while(!autobaud()){
-        // The autobauding attempt has failed
-        // DO NOT use application_sleep, since the autobaud has failed, the RN might be unresponsive. This will make
-        // the nRF think the RN has succesfully gone to sleep. If application_sleep is used here, the nRF might sleep forever
-        self_monitored_sleep(retryDelay);
-    }
-    led_toggle(LED_GPIO);
-
-    //init rn2483
-    while(!init_RN2483()){
-        // The init of the RN2483 has failed.
-        application_sleep(retryDelay);
-    }
-    led_toggle(LED_GPIO);
-    //Init end
-    
-    //join
-    while(!join()){
-        // The RN2483 was unable to connect/join the network
-        application_sleep(retryDelay);
-    }
-    led_toggle(LED_GPIO);
-
+    //init led and button
+    #if LIGHT
+        led_init(LED_GPIO);
+    #endif
+    button_init(BUTTON_GPIO);
 }
 
-void application_awake_cycle(const unsigned int sleepDuration, const unsigned int retryDelay)
-{
+void application_awake_cycle()
+{    
+    //init rn2483
+    while(!init_RN2483()){wait_a_bit(3);}
+    led_toggle(LED_GPIO);
+    //Init end
+
+    //join
+    while(!join()){wait_a_bit(100);}
+    led_toggle(LED_GPIO);
+
     //measure temperature
-
+    int temperature = (int)get_temperature();
     //send temperature
-    while(!send("test", retryDelay)){
-        // The message was not sent
-        application_sleep(retryDelay);
-    }
-
+    char temp[5];
+    snprintf(temp, 5, "%d", temperature);
+    debug_print("Read temperature: %s", temp);
+    send(temp);
     //Sleep
-    application_sleep(sleepDuration);
+    application_sleep();
 }
